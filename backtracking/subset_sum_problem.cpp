@@ -4,6 +4,10 @@
 #include <ctime>
 #include <iterator>
 #include <chrono>
+#include <algorithm>
+#include <random>
+#include <unordered_set>
+#include <numeric>
 
 struct set {
     std::vector<unsigned> arr;
@@ -14,13 +18,23 @@ struct set {
 
 set::set(size_t size, unsigned max_val)
 {
-    this->arr = std::vector<unsigned>(size);
     this->target = 0;
-    for (size_t i = 0; i < size; i++) {
-        arr[i] = rand() % max_val + 1;
-        if (rand() % 2) {
-            this->target += arr[i];
+    std::unordered_set<unsigned> aux;
+    aux.insert(1);
+    for (size_t i = 1; i < size; i++) {
+        if (!aux.insert(rand() % max_val + 1).second) {
+            i--;
         }
+    }
+    this->arr = std::vector<unsigned>(aux.begin(), aux.end());
+    unsigned count = rand() % size + 1, tmp = 0;
+    std::unordered_set<unsigned> hist;
+    for (size_t i = 0; i < count; i++) {
+        do {
+            tmp = rand() % size;
+        } while (hist.find(tmp) != hist.end());
+        hist.insert(tmp);
+        target += arr[tmp];
     }
 }
 
@@ -53,19 +67,30 @@ bool ssp_bruteforce(std::vector<unsigned>& set, std::vector<unsigned>& subset, u
     return false;
 }
 
-bool ssp_backtracking(const std::vector<unsigned>& set, int n, int targetSum, std::vector<unsigned>& currentSubset, int currentIndex) {
+bool ssp_backtracking(std::vector<unsigned>& set, unsigned n, unsigned targetSum, std::vector<unsigned>& currentSubset, unsigned currentIndex) {
     bt_comp++;
     if (targetSum == 0) {
         return true;
     }
 
-    for (int i = currentIndex; i < n; ++i) {
+    for (size_t i = currentIndex; i < n; i++) {
         currentSubset.push_back(set[i]);
+        unsigned sum = std::accumulate(currentSubset.begin(), currentSubset.end(), 0);
         bt_comp++;
-        if (ssp_backtracking(set, n, targetSum - set[i], currentSubset, i + 1)) {
+        if (sum > targetSum) {
+            currentSubset.pop_back();
+            continue;
+        } else if (sum == targetSum) {
+            bt_comp++;
             return true;
+        } else {
+            bt_comp += 2;
+            if (ssp_backtracking(set, n, targetSum, currentSubset, i + 1)) {
+                return true;
+            } else {
+                currentSubset.pop_back();
+            }
         }
-        currentSubset.pop_back();
     }
 
     return false;
@@ -84,9 +109,9 @@ void test_bruteforce(set& set) {
     std::vector<unsigned> subset;
     bf_comp = 0;
     auto begin = std::chrono::high_resolution_clock::now();
-    bool res = ssp_bruteforce(set.arr, subset, set.arr.size(), set.target);
+    ssp_bruteforce(set.arr, subset, set.arr.size(), set.target);
     auto end = std::chrono::high_resolution_clock::now();
-    auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+    auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
     std::cout << "bruteforce," << set.target << "," << set.arr.size() << "," << time << "," << bf_comp << "\n";
 }
 
@@ -94,9 +119,9 @@ void test_backtracking(set& set) {
     std::vector<unsigned> subset;
     bt_comp = 0;
     auto begin = std::chrono::high_resolution_clock::now();
-    bool res = ssp_backtracking(set.arr, set.arr.size(), set.target, subset, 0);
+    ssp_backtracking(set.arr, set.arr.size(), set.target, subset, 0);
     auto end = std::chrono::high_resolution_clock::now();
-    auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+    auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
     std::cout << "backtracking," << set.target << "," << set.arr.size() << "," << time << "," << bt_comp << "\n";
 }
 
@@ -108,7 +133,7 @@ int main()
         for (int j = 0; j < 5; j++) {
             srand(i ^ j ^ time(NULL));
             set set(sizes[i], sizes[i]);
-            std::cout << set.arr << " " <<  set.target << "\n";
+
             test_backtracking(set);
             test_bruteforce(set);
         }

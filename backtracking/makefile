@@ -1,7 +1,7 @@
 # Makefile for compiling a C++ source file
 
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall -Wextra
+CXXFLAGS = -std=c++11 -Wall -Wextra -O2
 
 # Source file and target executable
 SRC = subset_sum_problem.cpp
