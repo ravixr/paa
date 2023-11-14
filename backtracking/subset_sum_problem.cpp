@@ -20,8 +20,7 @@ set::set(size_t size, unsigned max_val)
 {
     this->target = 0;
     std::unordered_set<unsigned> aux;
-    aux.insert(1);
-    for (size_t i = 1; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         if (!aux.insert(rand() % max_val + 1).second) {
             i--;
         }
